@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# compare dotfiles in user accounts with current defaults from /etc/skel
+#
+# Copyright (C) 2020  Christian Garbs <mitch@cgarbs.de>
+# Licensed under GNU GPL v3 or later.
+#
+# skelcheck is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# skelcheck is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with skelcheck.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+##### find out what to do
+## TODO: add commandline argument parser
+who=me
+## TODO: who=homes to use all users with $HOME under /home
+## TODO: who=passwd to use all users from /etc/passwd
+## TODO: who=passwd-gt-1000 to use all users from /etc/passwd with uid > 1000 (Debian style)
+## TODO: NIS etc? or does using getent handle this already?
+what=check
+## TODO: what=replace to copy with backup files
+diffparams=( -Narup --color )
+
+##### functions
+
+# exit with exit code $1 and error message $*
+die()
+{
+    local exitcode=$1
+    shift
+    echo "${@}" >&2
+    exit "$exitcode"
+}
+ 
+# set $home to home directory of user $user
+get_home_for_user()
+{
+    local line
+    if line=$(getent passwd "$user"); then
+	IFS=: read -r _ _ _ _ _ home _ <<< "$line"
+    else
+	die 1 "could not getent passwd entry for user '$user'"
+    fi
+}
+
+# set $skelfiles array to all files from /etc/skel
+get_skelfiles()
+{
+    mapfile -t skelfiles < <( find /etc/skel -type f )
+    if [ ${#skelfiles[*]} -eq 0 ]; then
+	die 2 'there are no files in /etc/skel to process'
+    fi
+}
+
+# set $users array to current user
+set_users_to_current_user()
+{
+    users=( "$(whoami)" )
+}
+
+# set $users array depending on $who
+get_users()
+{
+    case $who in
+	me)  set_users_to_current_user;;
+	*)   die 4 "unknown who '$who'";;
+    esac
+}
+
+# check $skelfiles for $user in $home
+do_check()
+{
+    for skelfile in "${skelfiles[@]}"; do
+	homefile="$home/$(basename "$skelfile")"
+	echo
+	diff "${diffparams[@]}" "$skelfile" "$homefile"
+    done
+}
+
+# run $what action for given $user
+process_user()
+{
+    get_home_for_user
+    echo
+    echo "processing user '$user' in '$home':"
+
+    case $what in
+	check)  do_check;;
+	*)      die 3 "unknown what '$what'";;
+    esac
+}
+
+##### main script
+
+get_skelfiles
+get_users
+for user in "${users[@]}"; do
+    process_user
+done
