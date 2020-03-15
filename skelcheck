@@ -20,16 +20,11 @@
 
 
 
-##### find out what to do
-## TODO: add commandline argument parser
-who=me
-## TODO: who=homes to use all users with $HOME under /home
+## TODO: add proper commandline argument parseing
 ## TODO: who=passwd to use all users from /etc/passwd
 ## TODO: who=passwd-gt-1000 to use all users from /etc/passwd with uid > 1000 (Debian style)
 ## TODO: NIS etc? or does using getent handle this already?
-what=check
 ## TODO: what=replace to copy with backup files
-diffparams=( -Narup --color )
 
 ##### functions
 
@@ -41,7 +36,19 @@ die()
     echo "${@}" >&2
     exit "$exitcode"
 }
- 
+
+parse_commandline()
+{
+    # defaults
+    who=me
+    what=check
+    diffparams=( -Narup --color )
+
+    if [ "$1" = '--homes' ]; then
+	who=homes
+    fi
+}
+
 # set $home to home directory of user $user
 get_home_for_user()
 {
@@ -68,12 +75,33 @@ set_users_to_current_user()
     users=( "$(whoami)" )
 }
 
+# set $users array to all users with homes under /home
+set_users_to_all_homes()
+{
+    users=()
+
+    local lines
+    mapfile -t lines < <(getent passwd)
+    if [ ${#lines[*]} -eq 0 ]; then
+	die 5 'getent passwd gave no results'
+    fi
+
+    local line user home
+    for line in "${lines[@]}"; do
+	IFS=: read -r user _ _ _ _ home _ <<< "$line"
+	if [[ $home =~ ^/home/ ]]; then
+	    users+=( "$user" )
+	fi
+    done
+}
+
 # set $users array depending on $who
 get_users()
 {
     case $who in
-	me)  set_users_to_current_user;;
-	*)   die 4 "unknown who '$who'";;
+	me)     set_users_to_current_user;;
+	homes)  set_users_to_all_homes;;
+	*)      die 4 "unknown who '$who'";;
     esac
 }
 
@@ -102,6 +130,7 @@ process_user()
 
 ##### main script
 
+parse_commandline "$@"
 get_skelfiles
 get_users
 for user in "${users[@]}"; do
