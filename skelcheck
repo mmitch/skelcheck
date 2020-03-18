@@ -45,9 +45,13 @@ parse_commandline()
     what=check
     diffparams=( -Narup --color )
 
-    if [ "$1" = '--homes' ]; then
-	who=homes
-    fi
+    local arg
+    for arg in "$@"; do
+	case "$arg" in
+	    --homes)  who=homes;;
+	    *)        die 6 "unknown argument '$arg'";;
+	esac
+    done	
 }
 
 # set $home to home directory of user $user
