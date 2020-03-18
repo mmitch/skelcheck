@@ -49,6 +49,8 @@ parse_commandline()
     for arg in "$@"; do
 	case "$arg" in
 	    --homes)  who=homes;;
+	    --me)     who=me;;
+	    --check)  what=check;;
 	    *)        die 6 "unknown argument '$arg'";;
 	esac
     done	
