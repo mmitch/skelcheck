@@ -20,7 +20,8 @@
 
 
 
-## TODO: add proper commandline argument parseing
+## TODO: add proper commandline argument parsing
+## TODO: add --help text
 ## TODO: who=passwd to use all users from /etc/passwd
 ## TODO: who=passwd-gt-1000 to use all users from /etc/passwd with uid > 1000 (Debian style)
 ## TODO: NIS etc? or does using getent handle this already?
