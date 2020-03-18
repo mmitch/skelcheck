@@ -51,6 +51,7 @@ parse_commandline()
 	    --homes)  who=homes;;
 	    --me)     who=me;;
 	    --check)  what=check;;
+	    --diff)   what='diff';;
 	    *)        die 6 "unknown argument '$arg'";;
 	esac
     done	
@@ -117,6 +118,15 @@ do_check()
 {
     for skelfile in "${skelfiles[@]}"; do
 	homefile="$home/$(basename "$skelfile")"
+	diff -q "$skelfile" "$homefile"
+    done
+}
+
+# diff $skelfiles for $user in $home
+do_diff()
+{
+    for skelfile in "${skelfiles[@]}"; do
+	homefile="$home/$(basename "$skelfile")"
 	echo
 	diff "${diffparams[@]}" "$skelfile" "$homefile"
     done
@@ -131,6 +141,7 @@ process_user()
 
     case $what in
 	check)  do_check;;
+	diff)   do_diff;;
 	*)      die 3 "unknown what '$what'";;
     esac
 }
